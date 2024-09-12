@@ -1,4 +1,4 @@
-/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All rights reserved.
+/* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
 miniob is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
 You may obtain a copy of Mulan PSL v2 at:
@@ -18,14 +18,12 @@ See the Mulan PSL v2 for more details. */
 #include <errno.h>
 #include <string.h>
 
-#include <algorithm>
-#include <fstream>
 #include <iomanip>
-#include <iostream>
-#include <memory>
-#include <string>
 
 #include "common/log/log.h"
+#include "common/lang/algorithm.h"
+#include "common/lang/iomanip.h"
+
 namespace common {
 
 char *strip(char *str_)
@@ -46,7 +44,7 @@ char *strip(char *str_)
   return head;
 }
 
-void strip(std::string &str)
+void strip(string &str)
 {
   size_t head = 0;
 
@@ -63,29 +61,29 @@ void strip(std::string &str)
 }
 
 // Translation functions with templates are defined in the header file
-std::string size_to_pad_str(int size, int pad)
+string size_to_pad_str(int size, int pad)
 {
-  std::ostringstream ss;
-  ss << std::setw(pad) << std::setfill('0') << size;
+  ostringstream ss;
+  ss << setw(pad) << setfill('0') << size;
   return ss.str();
 }
 
-std::string &str_to_upper(std::string &s)
+string &str_to_upper(string &s)
 {
-  std::transform(s.begin(), s.end(), s.begin(), (int (*)(int)) & std::toupper);
+  transform(s.begin(), s.end(), s.begin(), (int (*)(int)) & toupper);
   return s;
 }
 
-std::string &str_to_lower(std::string &s)
+string &str_to_lower(string &s)
 {
-  std::transform(s.begin(), s.end(), s.begin(), (int (*)(int)) & std::tolower);
+  transform(s.begin(), s.end(), s.begin(), (int (*)(int)) & tolower);
   return s;
 }
 
-void split_string(const std::string &str, std::string delim, std::set<std::string> &results)
+void split_string(const string &str, string delim, set<string> &results)
 {
-  int cut_at;
-  std::string tmp_str(str);
+  int    cut_at;
+  string tmp_str(str);
   while ((cut_at = tmp_str.find_first_of(delim)) != (signed)tmp_str.npos) {
     if (cut_at > 0) {
       results.insert(tmp_str.substr(0, cut_at));
@@ -98,10 +96,10 @@ void split_string(const std::string &str, std::string delim, std::set<std::strin
   }
 }
 
-void split_string(const std::string &str, std::string delim, std::vector<std::string> &results)
+void split_string(const string &str, string delim, vector<string> &results)
 {
-  int cut_at;
-  std::string tmp_str(str);
+  int    cut_at;
+  string tmp_str(str);
   while ((cut_at = tmp_str.find_first_of(delim)) != (signed)tmp_str.npos) {
     if (cut_at > 0) {
       results.push_back(tmp_str.substr(0, cut_at));
@@ -114,7 +112,7 @@ void split_string(const std::string &str, std::string delim, std::vector<std::st
   }
 }
 
-void split_string(char *str, char dim, std::vector<char *> &results, bool keep_null)
+void split_string(char *str, char dim, vector<char *> &results, bool keep_null)
 {
   char *p = str;
   char *l = p;
@@ -132,10 +130,9 @@ void split_string(char *str, char dim, std::vector<char *> &results, bool keep_n
   return;
 }
 
-void merge_string(std::string &str, std::string delim, std::vector<std::string> &source, size_t result_len)
+void merge_string(string &str, string delim, vector<string> &source, size_t result_len)
 {
-
-  std::ostringstream ss;
+  ostringstream ss;
   if (source.empty()) {
     str = ss.str();
     return;
@@ -157,7 +154,7 @@ void merge_string(std::string &str, std::string delim, std::vector<std::string> 
   return;
 }
 
-void replace(std::string &str, const std::string &old, const std::string &new_str)
+void replace(string &str, const string &old, const string &new_str)
 {
   if (old.compare(new_str) == 0) {
     return;
@@ -171,12 +168,12 @@ void replace(std::string &str, const std::string &old, const std::string &new_st
     return;
   }
 
-  std::string result;
+  string result;
 
   size_t index;
   size_t last_index = 0;
 
-  while ((index = str.find(old, last_index)) != std::string::npos) {
+  while ((index = str.find(old, last_index)) != string::npos) {
     result += str.substr(last_index, index - last_index);
     result += new_str;
     last_index = index + old.length();
@@ -191,10 +188,10 @@ void replace(std::string &str, const std::string &old, const std::string &new_st
 
 char *bin_to_hex(const char *s, const int len, char *hex_buff)
 {
-  int new_len = 0;
-  unsigned char *end = (unsigned char *)s + len;
+  int            new_len = 0;
+  unsigned char *end     = (unsigned char *)s + len;
   for (unsigned char *p = (unsigned char *)s; p < end; p++) {
-    new_len += sprintf(hex_buff + new_len, "%02x", *p);
+    new_len += snprintf(hex_buff + new_len, 3, "%02x", *p);
   }
 
   hex_buff[new_len] = '\0';
@@ -203,22 +200,22 @@ char *bin_to_hex(const char *s, const int len, char *hex_buff)
 
 char *hex_to_bin(const char *s, char *bin_buff, int *dest_len)
 {
-  char buff[3];
+  char  buff[3];
   char *src;
-  int src_len;
+  int   src_len;
   char *p_dest;
   char *p_dest_end;
 
   src_len = strlen(s);
   if (src_len == 0) {
-    *dest_len = 0;
+    *dest_len   = 0;
     bin_buff[0] = '\0';
     return bin_buff;
   }
 
   *dest_len = src_len / 2;
-  src = (char *)s;
-  buff[2] = '\0';
+  src       = (char *)s;
+  buff[2]   = '\0';
 
   p_dest_end = bin_buff + (*dest_len);
   for (p_dest = bin_buff; p_dest < p_dest_end; p_dest++) {
@@ -245,4 +242,43 @@ bool is_blank(const char *s)
   return true;
 }
 
+/**
+ * 获取子串
+ * 从s中提取下标为n1~n2的字符组成一个新字符串，然后返回这个新串的首地址
+ *
+ * @param s
+ * @param n1
+ * @param n2
+ * @return
+ */
+char *substr(const char *s, int n1, int n2)
+{
+  char *sp = (char *)malloc(sizeof(char) * (n2 - n1 + 2));
+  int   i, j = 0;
+  for (i = n1; i <= n2; i++) {
+    sp[j++] = s[i];
+  }
+  sp[j] = 0;
+  return sp;
+}
+
+/**
+ * double to string
+ * @param v
+ * @return
+ */
+string double_to_str(double v)
+{
+  char buf[256];
+  snprintf(buf, sizeof(buf), "%.2f", v);
+  size_t len = strlen(buf);
+  while (buf[len - 1] == '0') {
+    len--;
+  }
+  if (buf[len - 1] == '.') {
+    len--;
+  }
+
+  return string(buf, len);
+}
 }  // namespace common

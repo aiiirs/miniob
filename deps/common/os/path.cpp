@@ -1,4 +1,4 @@
-/* Copyright (c) 2021 Xie Meiyi(xiemeiyi@hust.edu.cn) and OceanBase and/or its affiliates. All rights reserved.
+/* Copyright (c) 2021 OceanBase and/or its affiliates. All rights reserved.
 miniob is licensed under Mulan PSL v2.
 You can use this software according to the terms and conditions of the Mulan PSL v2.
 You may obtain a copy of Mulan PSL v2 at:
@@ -11,27 +11,28 @@ See the Mulan PSL v2 for more details. */
 //
 // Created by Longda on 2010
 //
-#include <sys/stat.h>
-#include <regex.h>
 #include <dirent.h>
+#include <regex.h>
 #include <string.h>
-
-#include <vector>
+#include <sys/stat.h>
 
 #include "common/defs.h"
-#include "common/os/path.h"
 #include "common/log/log.h"
+#include "common/os/path.h"
+#include "common/lang/string.h"
+#include "common/lang/vector.h"
+
 namespace common {
 
-std::string getFileName(const std::string &fullPath)
+string getFileName(const string &fullPath)
 {
-  std::string szRt;
-  size_t pos;
+  string szRt;
+  size_t      pos;
   try {
     pos = fullPath.rfind(FILE_PATH_SPLIT);
-    if (pos != std::string::npos && pos < fullPath.size() - 1) {
+    if (pos != string::npos && pos < fullPath.size() - 1) {
       szRt = fullPath.substr(pos + 1, fullPath.size() - pos - 1);
-    } else if (pos == std::string::npos) {
+    } else if (pos == string::npos) {
       szRt = fullPath;
     } else {
       szRt = "";
@@ -41,7 +42,7 @@ std::string getFileName(const std::string &fullPath)
   return szRt;
 }
 
-void getFileName(const char *path, std::string &fileName)
+void getFileName(const char *path, string &fileName)
 {
   // Don't care the last character as FILE_PATH_SPLIT
   const char *endPos = strrchr(path, FILE_PATH_SPLIT);
@@ -59,15 +60,15 @@ void getFileName(const char *path, std::string &fileName)
   return;
 }
 
-std::string getDirName(const std::string &fullPath)
+string getDirName(const string &fullPath)
 {
-  std::string szRt;
-  size_t pos;
+  string szRt;
+  size_t      pos;
   try {
     pos = fullPath.rfind(FILE_PATH_SPLIT);
-    if (pos != std::string::npos && pos > 0) {
+    if (pos != string::npos && pos > 0) {
       szRt = fullPath.substr(0, pos);
-    } else if (pos == std::string::npos) {
+    } else if (pos == string::npos) {
       szRt = fullPath;
     } else {
       // pos == 0
@@ -77,7 +78,7 @@ std::string getDirName(const std::string &fullPath)
   } catch (...) {}
   return szRt;
 }
-void getDirName(const char *path, std::string &parent)
+void getDirName(const char *path, string &parent)
 {
   // Don't care the last character as FILE_PATH_SPLIT
   const char *endPos = strrchr(path, FILE_PATH_SPLIT);
@@ -95,15 +96,15 @@ void getDirName(const char *path, std::string &parent)
   return;
 }
 
-std::string getFilePath(const std::string &fullPath)
+string getFilePath(const string &fullPath)
 {
-  std::string szRt;
-  size_t pos;
+  string szRt;
+  size_t      pos;
   try {
     pos = fullPath.rfind("/");
-    if (pos != std::string::npos) {
+    if (pos != string::npos) {
       szRt = fullPath.substr(0, pos);
-    } else if (pos == std::string::npos) {
+    } else if (pos == string::npos) {
       szRt = fullPath;
     } else {
       szRt = "";
@@ -113,12 +114,12 @@ std::string getFilePath(const std::string &fullPath)
   return szRt;
 }
 
-std::string getAboslutPath(const char *path)
+string getAboslutPath(const char *path)
 {
-  std::string aPath(path);
+  string aPath(path);
   if (path[0] != '/') {
     const int MAX_SIZE = 256;
-    char current_absolute_path[MAX_SIZE];
+    char      current_absolute_path[MAX_SIZE];
 
     if (NULL == getcwd(current_absolute_path, MAX_SIZE)) {}
   }
@@ -132,7 +133,7 @@ bool is_directory(const char *path)
   return (0 == stat(path, &st)) && (st.st_mode & S_IFDIR);
 }
 
-bool check_directory(std::string &path)
+bool check_directory(string &path)
 {
   while (!path.empty() && path.back() == '/')
     path.erase(path.size() - 1, 1);
@@ -157,7 +158,7 @@ bool check_directory(std::string &path)
     if (0 != mkdir(path.c_str(), 0777) && !is_directory(path.c_str()))
       return false;
 
-    path[i] = '/';
+    path[i]   = '/';
     sep_state = true;
   }
 
@@ -166,7 +167,7 @@ bool check_directory(std::string &path)
   return true;
 }
 
-int list_file(const char *path, const char *filter_pattern, std::vector<std::string> &files)
+int list_file(const char *path, const char *filter_pattern, vector<string> &files)
 {
   regex_t reg;
   if (filter_pattern) {
@@ -189,19 +190,21 @@ int list_file(const char *path, const char *filter_pattern, std::vector<std::str
 
   files.clear();
 
-  struct dirent entry;
-  struct dirent *pentry = NULL;
-  char tmp_path[PATH_MAX];
-  while ((0 == readdir_r(pdir, &entry, &pentry)) && (NULL != pentry)) {
-    if ('.' == entry.d_name[0])  // 跳过./..文件和隐藏文件
+  // readdir_r is deprecated in some systems, so we use readdir instead
+  // as readdir is not thread-safe, it is better to use C++ directory
+  // TODO
+  struct dirent *pentry;
+  char           tmp_path[PATH_MAX];
+  while ((pentry = readdir(pdir)) != NULL) {
+    if ('.' == pentry->d_name[0])  // 跳过./..文件和隐藏文件
       continue;
 
-    snprintf(tmp_path, sizeof(tmp_path), "%s/%s", path, entry.d_name);
+    snprintf(tmp_path, sizeof(tmp_path), "%s/%s", path, pentry->d_name);
     if (is_directory(tmp_path))
       continue;
 
-    if (!filter_pattern || 0 == regexec(&reg, entry.d_name, 0, NULL, 0))
-      files.push_back(entry.d_name);
+    if (!filter_pattern || 0 == regexec(&reg, pentry->d_name, 0, NULL, 0))
+      files.push_back(pentry->d_name);
   }
 
   if (filter_pattern)
